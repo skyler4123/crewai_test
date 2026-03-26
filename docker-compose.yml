@@ -1,0 +1,10 @@
+services:
+  crewai-test:
+    build: .
+    container_name: crewai_news_min
+    env_file: .env
+    volumes:
+      - .:/app
+    # Thêm dòng này để log hiện ra ngay, không bị kẹt trong buffer
+    environment:
+      - PYTHONUNBUFFERED=1
