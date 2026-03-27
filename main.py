@@ -1,26 +1,33 @@
 import os
 from crewai import Agent, Task, Crew
+# Import công cụ cào web
+from crewai_tools import ScrapeWebsiteTool
 
-# Lưu ý: Không cần khởi tạo gemini_llm kiểu cũ
-# Chỉ cần đảm bảo biến môi trường GOOGLE_API_KEY đã có
+# Khởi tạo công cụ (Để trống để Agent tự điền URL từ request của ông)
+scrape_tool = ScrapeWebsiteTool()
 
-# 1. Định nghĩa Agent dùng string cho llm
+# 1. Định nghĩa Agent
 news_agent = Agent(
-    role='News Scout',
-    goal='Tìm và tóm tắt 3 tin mới nhất về {topic}',
-    backstory='Bạn là một chuyên gia săn tin công nghệ.',
-    # THỬ PHƯƠNG ÁN NÀY TRƯỚC:
+    role='Omni-Scout Specialist',
+    goal='Thực hiện chính xác yêu cầu: {request}',
+    backstory='''Bạn là một chuyên gia duyệt web. 
+    Bạn có khả năng phân tích câu lệnh, xác định website cần vào 
+    và trích xuất dữ liệu chính xác.''',
+    # GIỮ NGUYÊN MODEL STRING CỦA ÔNG:
     llm="gemini/gemini-flash-latest", 
+    tools=[scrape_tool], 
     verbose=True,
     allow_delegation=False
 )
 
 # 2. Định nghĩa Task
 news_task = Task(
-    description='Tìm hiểu về {topic} trong 24h qua và liệt kê 3 gạch đầu dòng.',
-    expected_output='Một bản tóm tắt 3 tin tức mới nhất.',
+    description='''Phân tích yêu cầu: "{request}". 
+    Hãy sử dụng ScrapeWebsiteTool để truy cập vào trang web liên quan 
+    và trả về thông tin chi tiết nhất.''',
+    expected_output='Kết quả xử lý hoàn chỉnh cho yêu cầu: "{request}".',
     agent=news_agent,
-    output_file='news_report.md'
+    output_file='result_report.md'
 )
 
 # 3. Khởi tạo Crew
@@ -31,5 +38,9 @@ crew = Crew(
 )
 
 if __name__ == "__main__":
-    print("### ĐANG CHẠY CREWAI VỚI STRING LLM... ###")
-    crew.kickoff(inputs={'topic': 'Ruby on Rails 8 and Kamal 2'})
+    print("### SKYCOM BOT READY (SINGLE INPUT MODE) ###")
+    # Nhận 1 dòng text duy nhất từ ông
+    user_command = "Vào Gamek.vn để xem trang đang đăng những tin tức gì"
+    
+    # Truyền vào biến {request}
+    crew.kickoff(inputs={'request': user_command})

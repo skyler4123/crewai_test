@@ -2,9 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Chỉ cài 2 thư viện chính, bỏ pydantic vì crewai sẽ tự kéo bản phù hợp
+# Nâng cấp pip và cài bản có tools
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir crewai langchain-google-genai
+    pip install --no-cache-dir "crewai[tools]" langchain-google-genai
 
 COPY . .
 
