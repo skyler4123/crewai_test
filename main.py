@@ -1,88 +1,57 @@
 import os
 from datetime import datetime
-from crewai import Agent, Task, Crew, Process
-from crewai_tools import FileReadTool, FileWriterTool, DirectoryReadTool
+from crewai import Agent, Task, Crew, Process, LLM
+from crewai_tools import FileReadTool, DirectoryReadTool
 
-# 1. Input Configuration
-# User intent: Understand how Stimulus controllers map to the current Rails paths
+# 1. Khởi tạo Local LLM (Sử dụng Llama 3 - cực giỏi về code)
+local_llm = LLM(
+    model="ollama/llama3",
+    base_url="http://ollama:11434"
+)
+
+# 2. Configuration
 user_command = "Describe the relation between stimulus controller name with the current path of each page"
-
-# Dynamic Output Path Logic
+# Thêm timestamp vào tên file để không bao giờ bị trùng hoặc bị khóa file cũ
+timestamp = datetime.now().strftime("%H%M%S") 
 date_prefix = datetime.now().strftime("%Y%m%d")
-slug = "-".join(user_command.lower().split()[:5]).replace(".", "-").replace("/", "-")
-output_path = f"outputs/{date_prefix}-{slug}.md"
-os.makedirs("outputs", exist_ok=True)
+output_path = f"outputs/{date_prefix}-{timestamp}-analysis.md"
 
-# 2. Tool Initialization (Scoping to Skycom functional directories)
-# We avoid the root './skycom' to prevent scanning .git or tmp folders
+# Đảm bảo folder outputs sạch sẽ và có quyền ghi
+if not os.path.exists("outputs"):
+    os.makedirs("outputs", exist_ok=True)
+
+# 3. Tools (Chỉ quét folder cần thiết để tiết kiệm RAM/CPU)
 dir_app_tool = DirectoryReadTool(directory='./skycom/app')
-dir_config_tool = DirectoryReadTool(directory='./skycom/config')
 file_read_tool = FileReadTool()
-file_writer_tool = FileWriterTool()
 
-# 3. Agent Definitions
+local_llm = LLM(
+    model="ollama/llama3.1", # Thêm :latest cho khớp với 'ollama list'
+    base_url="http://ollama:11434",
+)
+
+# Trong phần Agent, đảm bảo dùng đúng object local_llm này
 analyst = Agent(
     role='Skycom System Analyst',
-    goal='Analyze the Rails 8 codebase structure and architectural patterns.',
-    backstory="""You are an expert in Ruby on Rails 8 and Hotwire. 
-    You excel at mapping frontend Stimulus controllers to backend routes and views. 
-    You provide the technical context needed for other developers to work.""",
-    llm="gemini/gemini-flash-latest",
-    tools=[dir_app_tool, dir_config_tool, file_read_tool],
-    verbose=True,
-    allow_delegation=False
-)
-
-backend_dev = Agent(
-    role='Skycom Backend Engineer',
-    goal='Identify and explain backend logic, routing, and controller associations.',
-    backstory="""You are a Senior Rails Developer. You understand how Rails 
-    routes map to controllers and how those controllers render specific views 
-    that carry Stimulus data attributes.""",
-    llm="gemini/gemini-flash-latest",
-    tools=[file_read_tool],
-    verbose=True,
-    allow_delegation=False
-)
-
-frontend_dev = Agent(
-    role='Skycom Frontend Engineer',
-    goal='Map Stimulus JS controllers to HTML elements and Rails view paths.',
-    backstory="""You are a Hotwire specialist. You know exactly how 
-    'hello_controller.js' relates to 'data-controller="hello"' in your 
-    Rails views and how folder structures affect naming conventions.""",
-    llm="gemini/gemini-flash-latest",
+    goal='Analyze Rails structure using local resources.',
+    backstory='Senior Rails Developer running on local hardware.',
+    llm=local_llm, 
     tools=[dir_app_tool, file_read_tool],
     verbose=True,
-    allow_delegation=False
+    allow_delegation=False # Tắt cái này để đỡ tốn thêm request nội bộ
 )
 
-# 4. Task Definition
 analysis_task = Task(
-    description=f"""
-    Objective: {user_command}
-    
-    Steps:
-    1. Scan './skycom/app/javascript/controllers' to see naming conventions.
-    2. Scan './skycom/config/routes.rb' and './skycom/app/views' to see how pages are served.
-    3. Explain the naming convention (e.g., how 'users/profile_controller.js' maps to a specific view).
-    4. Detail if there is a direct relationship between the URL path and the Stimulus controller naming in this specific project.
-    """,
-    expected_output="A technical documentation explaining the mapping between Stimulus controllers and page paths in Skycom.",
+    description=f"Task: {user_command}. Focus on app/javascript/controllers and app/views.",
+    expected_output="Technical report on Stimulus mapping.",
     agent=analyst,
     output_file=output_path
 )
 
-# 5. Crew Assembly
 skycom_crew = Crew(
-    agents=[analyst, backend_dev, frontend_dev],
+    agents=[analyst],
     tasks=[analysis_task],
-    process=Process.sequential,
     verbose=True
 )
 
 if __name__ == "__main__":
-    print(f"### SKYCOM AI CREW: INITIATING ANALYSIS ###")
-    print(f"### TASK: {user_command} ###")
-    
-    skycom_crew.kickoff(inputs={'request': user_command})
+    skycom_crew.kickoff()

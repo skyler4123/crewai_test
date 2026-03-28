@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Cài đặt crewai[tools] để có FileReadTool, FileWriterTool, v.v.
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir "crewai[tools]" langchain-google-genai
+    pip install --no-cache-dir "crewai[tools]" langchain-google-genai langchain-community langchain-ollama
 
 COPY . .
 
