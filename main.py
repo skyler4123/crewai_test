@@ -17,7 +17,7 @@ local_llm = LLM(
 )
 
 # 2. Configuration & Output Path
-user_command = "What is purpose of stimulus_controller helper, I see it in application.html.erb?"
+user_command = "Table users will have a model name User, I want to know what fields that model/table have?"
 timestamp = datetime.now().strftime("%H%M%S") 
 date_prefix = datetime.now().strftime("%Y%m%d")
 output_path = f"outputs/{date_prefix}-{timestamp}-analysis.md"
@@ -30,31 +30,32 @@ dir_app_tool = DirectoryReadTool(directory='./skycom/app')
 file_read_tool = FileReadTool()
 
 # 4. Agent - Nâng cấp vai trò cho xứng tầm 20 Cores
+project_tool = DirectoryReadTool(directory='./skycom')
+file_tool = FileReadTool()
 analyst = Agent(
-    role='Senior Rails Architect',
-    goal=f'Analyze the {user_command} in the Skycom project.',
+    role='Expert Rails Developer',
+    goal='Execute the user request by exploring the codebase and providing a detailed answer.',
     backstory=(
-        'Expert in Ruby on Rails and StimulusJS. '
-        'CRITICAL: When using a tool, you must wait for the tool output before giving a final answer. '
-        'NEVER provide a JSON tool call as your Final Answer. '
-        'Your final answer must be a clear, human-readable explanation in Markdown.'
+        "You are a master of Ruby on Rails. You have full access to the project directory. "
+        "Your workflow: 1. Explore the directory to find relevant files. 2. Read those files. "
+        "3. Synthesize the information to answer the user. "
+        "IMPORTANT: Always provide a human-readable final answer, never just JSON."
     ),
     llm=local_llm, 
-    tools=[dir_app_tool, file_read_tool],
-    verbose=True,
-    allow_delegation=False
+    tools=[project_tool, file_tool],
+    verbose=True
 )
 
 # 5. Task - Yêu cầu cụ thể để AI không "chém gió"
 analysis_task = Task(
     description=(
-        f"Investigate the custom helper 'stimulus_controller' in the Skycom project.\n"
-        "STEPS TO FOLLOW:\n"
-        "- First, look into 'app/views/layouts/application.html.erb' to see how it is used.\n"
-        "- Second, search for the helper definition in 'app/helpers/application_helper.rb' or other files in 'app/helpers/'.\n"
-        "- Third, explain what this helper does (e.g., does it format controller names for Stimulus?)."
+        f"Process this user request: '{user_command}'.\n"
+        "Follow these steps:\n"
+        "- Step 1: Browse the directory to locate files related to the request.\n"
+        "- Step 2: Read and analyze the content of those files.\n"
+        "- Step 3: Provide a comprehensive answer based on your findings."
     ),
-    expected_output="A detailed explanation of the stimulus_controller helper's purpose and its code implementation.",
+    expected_output="A complete and detailed response to the user's request based on the actual project code.",
     agent=analyst,
     output_file=output_path
 )
