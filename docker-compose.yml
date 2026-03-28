@@ -20,9 +20,12 @@ services:
       - .:/app
       - ./skycom:/app/skycom
     environment:
-      - PYTHONUNBUFFERED=1
-      - OLLAMA_HOST=http://ollama:11434
       - CREWAI_TRACING_ENABLED=false
+      - OTEL_SDK_DISABLED=true
+      - PYTHONUNBUFFERED=1
+    # Thêm 2 dòng này để giả lập bàn phím (nếu cần)
+    stdin_open: true
+    tty: true
 
 volumes:
   ollama_data:
