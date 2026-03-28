@@ -1,20 +1,7 @@
 services:
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    # Dùng bash để chạy server ở background rồi pull model
-    # entrypoint: [ "/bin/bash", "-c", "ollama serve & sleep 5 && ollama pull llama3 && wait" ]
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
-
   skycom-crewai:
     build: .
     container_name: skycom-crewai
-    depends_on:
-      ollama:
-        condition: service_started # Đợi ollama lên rồi mới chạy crewai
     env_file: .env
     volumes:
       - .:/app

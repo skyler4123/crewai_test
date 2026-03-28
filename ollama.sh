@@ -1,34 +1,20 @@
-# Script tải bộ "Hào Kiệt Local LLM" cho Skyler
-# 20 Cores CPU | 40GB RAM | Ho Chi Minh City
+# Install Ollama
+docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
 
-echo "🚀 Bắt đầu nạp năng lượng cho dàn Model của Skyler..."
+# 1. Llama 3.1 (8B): "Lễ tân" điều hướng, phân loại request nhanh.
+docker exec -it ollama ollama pull llama3.1 && \
 
-# NHÓM 1: AGENT & ĐIỀU PHỐI (Chạy mượt, ít lỗi logic)
-echo "📦 Đang tải Llama 3.1 (8B) - Trùm Agent..."
-docker exec -it ollama ollama pull llama3.1
+# 2. Qwen 2.5 Coder (14B): "Thợ code" chính, cực giỏi Ruby/Rails/Stimulus.
+docker exec -it ollama ollama pull qwen2.5-coder:14b-instruct && \
 
-echo "📦 Đang tải Mistral Nemo (12B) - Logic cực tốt..."
-docker exec -it ollama ollama pull mistral-nemo
+# 3. Gemma 2 (27B): "Kiến trúc sư" phân tích hệ thống và lập kế hoạch.
+docker exec -it ollama ollama pull gemma2:27b && \
 
-echo "📦 Đang tải Mixtral (8x7B) - Huyền thoại MoE..."
-docker exec -it ollama ollama pull mixtral
+# 4. Command R (35B): "Chuyên gia Tool" - con này bắt buộc phải có để ghi file.
+docker exec -it ollama ollama pull command-r && \
 
-# NHÓM 2: CHUYÊN GIA CODE & CÔNG VIỆC NẶNG
-echo "📦 Đang tải Qwen 2.5 Coder (14B-Instruct) - Phù thủy Rails..."
-docker exec -it ollama ollama pull qwen2.5-coder:14b-instruct
+# 5. DeepSeek-R1 (32B): "Cỗ máy tư duy" - dùng để fix bug khó và check logic.
+docker exec -it ollama ollama pull deepseek-r1:32b && \
 
-echo "📦 Đang tải Gemma 2 (27B) - Kiến trúc sư tối thượng..."
-docker exec -it ollama ollama pull gemma2:27b
-
-echo "📦 Đang tải Command R (35B) - Vua của RAG & Project lớn..."
-docker exec -it ollama ollama pull command-r
-
-# NHÓM 3: SIÊU SUY LUẬN (Reasoning)
-echo "📦 Đang tải DeepSeek R1 (14B) - Tư duy logic nhanh..."
-docker exec -it ollama ollama pull deepseek-r1:14b
-
-echo "📦 Đang tải DeepSeek R1 (32B) - Cỗ máy giải quyết Bug khó..."
-docker exec -it ollama ollama pull deepseek-r1:32b
-
-echo "✅ TẤT CẢ ĐÃ XONG! Sáng mai tha hồ cho 20 nhân CPU 'quẩy' dự án Skycom nha Skyler!"
-docker exec -it ollama ollama list
+# 6. DeepSeek-Coder-V2 (16B): "Từ điển sống" - dự phòng khi Qwen bí bài.
+docker exec -it ollama ollama pull deepseek-coder-v2:16b-lite-instruct-q8_0
