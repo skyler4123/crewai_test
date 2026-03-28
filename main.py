@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from crewai import Agent, Task, Crew, LLM
-from crewai_tools import FileReadTool, DirectoryReadTool
+from crewai_tools import FileReadTool, DirectoryReadTool, FileWriterTool # Thêm cái này
 
 # 1. Khởi tạo Qwen 2.5 Coder 14B - "Ông trùm" Code Local hiện tại
 # Tận dụng 16k context window và 16/20 cores của ông
@@ -17,7 +17,9 @@ local_llm = LLM(
 )
 
 # 2. Configuration & Output Path
-user_command = "Table users will have a model name User, I want to know what fields that model/table have?"
+# user_command = "In User model, write a method named 'can_manage_billing?' that returns true if the user is a super_admin or a company_owner. Ensure it uses the existing 'system_role' enum."
+# user_command = "Modify 'app/models/user.rb' by appending '# Skycom AI was here' at the very bottom. You MUST use FileWriterTool to save the change. Do not provide a summary, just execute the tool call."
+user_command = "How to use fetchJson method, I saw it used a lot at some stimulus controllers"
 timestamp = datetime.now().strftime("%H%M%S") 
 date_prefix = datetime.now().strftime("%Y%m%d")
 output_path = f"outputs/{date_prefix}-{timestamp}-analysis.md"
@@ -28,6 +30,7 @@ if not os.path.exists("outputs"):
 # 3. Tools (Chỉ quét folder cần thiết để tiết kiệm tài nguyên)
 dir_app_tool = DirectoryReadTool(directory='./skycom/app')
 file_read_tool = FileReadTool()
+write_tool = FileWriterTool()
 
 # 4. Agent - Nâng cấp vai trò cho xứng tầm 20 Cores
 project_tool = DirectoryReadTool(directory='./skycom')
@@ -38,24 +41,28 @@ analyst = Agent(
     backstory=(
         "You are a master of Ruby on Rails. You have full access to the project directory. "
         "Your workflow: 1. Explore the directory to find relevant files. 2. Read those files. "
-        "3. Synthesize the information to answer the user. "
-        "IMPORTANT: Always provide a human-readable final answer, never just JSON."
+        "3. **Action Request**: If the user asks to modify code, you MUST:"
+        "   - Use the 'FileWriterTool' (NOT just writing JSON) to save changes."
     ),
     llm=local_llm, 
-    tools=[project_tool, file_tool],
+    tools=[project_tool, file_tool, write_tool],
     verbose=True
 )
 
 # 5. Task - Yêu cầu cụ thể để AI không "chém gió"
 analysis_task = Task(
     description=(
-        f"Process this user request: '{user_command}'.\n"
-        "Follow these steps:\n"
-        "- Step 1: Browse the directory to locate files related to the request.\n"
-        "- Step 2: Read and analyze the content of those files.\n"
-        "- Step 3: Provide a comprehensive answer based on your findings."
+        f"User Request: '{user_command}'\n\n"
+        "INSTRUCTIONS FOR AGENT:\n"
+        "1. **Analyze Intent**: Determine if the user wants an INFORMATION (explanation/analysis) or an ACTION (writing/modifying code).\n"
+        "2. **Information Request**: If it is an analysis, browse the files, read them, and provide a detailed Markdown response. DO NOT modify any files.\n"
+        "3. **Action Request**: If the user explicitly asks to 'add', 'create', 'update', or 'modify' code, you MUST:\n"
+        "   - Read the target file.\n"
+        "   - Use 'FileWriteTool' to apply the changes directly to the codebase.\n"
+        "   - Ensure you keep all existing logic and only add/modify what is necessary.\n"
+        "4. **Final Step**: Always summarize what you did or what you found."
     ),
-    expected_output="A complete and detailed response to the user's request based on the actual project code.",
+    expected_output="Either a comprehensive Markdown report OR a confirmation of the code changes performed.",
     agent=analyst,
     output_file=output_path
 )
