@@ -1,10 +1,10 @@
 services:
-  crewai-test:
+  skycom-crewai:
     build: .
-    container_name: crewai_news_min
+    container_name: skycom-crewai
     env_file: .env
     volumes:
       - .:/app
-    # Thêm dòng này để log hiện ra ngay, không bị kẹt trong buffer
+      - ./skycom:/app/skycom  # QUAN TRỌNG: Mount dự án Rails vào đây
     environment:
       - PYTHONUNBUFFERED=1

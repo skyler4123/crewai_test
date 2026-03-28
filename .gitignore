@@ -6,3 +6,4 @@
 
 # Ignore all environment files.
 /.env*
+/skycom
