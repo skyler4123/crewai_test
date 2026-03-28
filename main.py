@@ -6,17 +6,18 @@ from crewai_tools import FileReadTool, DirectoryReadTool
 # 1. Khởi tạo Qwen 2.5 Coder 14B - "Ông trùm" Code Local hiện tại
 # Tận dụng 16k context window và 16/20 cores của ông
 local_llm = LLM(
-    model="ollama/qwen2.5-coder:14b",
+    model="ollama/llama3.1",
+    # model="ollama/qwen2.5-coder:14b",
     base_url="http://ollama:11434",
     # Thay vì dùng config, ta dùng các tham số chuẩn của OpenAI 
     # litellm sẽ tự map sang Ollama options
-    temperature=0.1,
-    timeout=300,
-    max_tokens=8192 # Giới hạn token output để tránh tràn RAM
+    temperature=0,
+    # timeout=300,
+    # max_tokens=8192 # Giới hạn token output để tránh tràn RAM
 )
 
 # 2. Configuration & Output Path
-user_command = "Describe the relation between stimulus controller name with the current path of each page"
+user_command = "What is purpose of stimulus_controller helper, I see it in application.html.erb?"
 timestamp = datetime.now().strftime("%H%M%S") 
 date_prefix = datetime.now().strftime("%Y%m%d")
 output_path = f"outputs/{date_prefix}-{timestamp}-analysis.md"
@@ -32,7 +33,12 @@ file_read_tool = FileReadTool()
 analyst = Agent(
     role='Senior Rails Architect',
     goal=f'Analyze the {user_command} in the Skycom project.',
-    backstory='Expert in Ruby on Rails, StimulusJS, and directory conventions.',
+    backstory=(
+        'Expert in Ruby on Rails and StimulusJS. '
+        'CRITICAL: When using a tool, you must wait for the tool output before giving a final answer. '
+        'NEVER provide a JSON tool call as your Final Answer. '
+        'Your final answer must be a clear, human-readable explanation in Markdown.'
+    ),
     llm=local_llm, 
     tools=[dir_app_tool, file_read_tool],
     verbose=True,
@@ -42,12 +48,13 @@ analyst = Agent(
 # 5. Task - Yêu cầu cụ thể để AI không "chém gió"
 analysis_task = Task(
     description=(
-        f"Task: {user_command}. \n"
-        "1. Read app/javascript/controllers to see available controllers.\n"
-        "2. Cross-reference with app/views to see where data-controller is used.\n"
-        "3. Identify the pattern of how page paths relate to these controllers."
+        f"Investigate the custom helper 'stimulus_controller' in the Skycom project.\n"
+        "STEPS TO FOLLOW:\n"
+        "- First, look into 'app/views/layouts/application.html.erb' to see how it is used.\n"
+        "- Second, search for the helper definition in 'app/helpers/application_helper.rb' or other files in 'app/helpers/'.\n"
+        "- Third, explain what this helper does (e.g., does it format controller names for Stimulus?)."
     ),
-    expected_output="A detailed markdown report mapping Stimulus controllers to specific Rails routes/paths.",
+    expected_output="A detailed explanation of the stimulus_controller helper's purpose and its code implementation.",
     agent=analyst,
     output_file=output_path
 )
