@@ -37,11 +37,57 @@ project_tool = DirectoryReadTool(directory='./skycom') # Quét toàn bộ projec
 file_read_tool = FileReadTool()
 write_tool = FileWriterTool()
 
+SKYCOM_ARCHITECTURE_MANIFESTO = """
+# Project Context: Skycom (Hybrid SPA Architecture)
+Skycom is a multi-tenant business management platform. It uses a non-traditional Rails architecture designed for speed and a desktop-app feel, bypassing heavy server-side HTML rendering.
+
+## Core Principles:
+1. **Shell-First Rendering**: Initial HTML returns an empty shell; Stimulus hydrates the page.
+2. **JSON-Only Data Flow**: Rails Controllers handle `.json` requests for data.
+3. **Client-Side Templating**: Rendering happens in `contentHTML()` via ES6 Template Literals.
+
+## Stimulus Naming & Inheritance (CRITICAL):
+1. **Class Naming**: Use **Pascal_Snake_Case** (e.g., `Companies_Branches_EmployeesController`).
+2. **Identifier**: `Companies_LayoutController` -> `companies--layout`. Use `window.identifier(Class)` to generate.
+3. **Inheritance**: Child controllers inherit all `static targets` from parents. Do not redefine them.
+
+## Advanced Global Helpers (window.*):
+AI MUST prioritize these over native implementations to ensure Rails compatibility:
+
+1. **fetchJson(url|options, options)**:
+   - **Smart Default**: If `url` is omitted, it fetches from the CURRENT `window.location.href`.
+   - **Security**: Automatically injects `X-CSRF-Token` for internal requests.
+   - **Auto-JSON**: Stringifies object bodies and sets `Content-Type: application/json` automatically.
+   - *Usage*: `const data = await fetchJson({ params: { status: 'active' } })` (fetches from current path).
+
+2. **form({ action, method, dataAction, className, html })**:
+   - **Smart Default Action**: Defaults to `pathname()` (current URL).
+   - **Rails Method Spoofing**: Since browsers only support GET/POST, this helper automatically adds `<input type="hidden" name="_method">` for PATCH and DELETE.
+   - **Security**: Automatically injects CSRF `authenticity_token` via `formPostSecurityTags()`.
+   - *Usage*: `form({ method: 'PATCH', html: fields })` generates a Rails-compatible update form.
+
+3. **URL Helpers**:
+   - `pathname()`: Returns `window.location.pathname`.
+   - `href()`: Returns `window.location.href`.
+
+4. **Security Helpers**:
+   - `csrfToken()`: Fetches from meta tag.
+   - `formPostSecurityTags()` / `formPatchSecurityTags()`: For manual form building.
+
+## Coding Standards for AI:
+- **Form Generation**: Always use the `form()` helper for creating new/edit forms to ensure CSRF and Method Spoofing are handled.
+- **Data Ingestion**: Use `fetchJson()` inside `connect()` or event handlers. Remember it defaults to the current page's path.
+- **Consistency**: When updating `Companies::EmployeesController`, ensure the `create` (POST) and `update` (PATCH) actions return appropriate JSON for these helpers to consume.
+- **Paths**: When the user says "this page", use `pathname()` or `fetchJson()` with no URL.
+"""
+
 # 4. Agent
 analyst = Agent(
     role='Expert Rails Developer',
     goal='Execute the user request by exploring the codebase and providing a detailed answer.',
     backstory=(
+        f"{SKYCOM_ARCHITECTURE_MANIFESTO}\n"
+        "--- \n"
         "You are a master of Ruby on Rails. You have full access to the project directory. "
         "Your workflow: 1. Explore the directory to find relevant files. 2. Read those files. "
         "3. **Action Request**: If the user asks to modify code, you MUST:"

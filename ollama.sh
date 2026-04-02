@@ -3,9 +3,11 @@ docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
 
 # 1. Llama 3.1 (8B): "Lễ tân" điều hướng, phân loại request nhanh.
 docker exec -it ollama ollama pull llama3.1 && \
+docker exec -it ollama ollama pull llama3.1:70b && \
 
 # 2. Qwen 2.5 Coder (14B): "Thợ code" chính, cực giỏi Ruby/Rails/Stimulus.
 docker exec -it ollama ollama pull qwen2.5-coder:14b-instruct && \
+docker exec -it ollama ollama pull qwen2.5:32b && \
 
 # 3. Gemma 2 (27B): "Kiến trúc sư" phân tích hệ thống và lập kế hoạch.
 docker exec -it ollama ollama pull gemma2:27b && \
